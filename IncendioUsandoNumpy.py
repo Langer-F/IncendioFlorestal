@@ -7,7 +7,7 @@ from matplotlib.colors import ListedColormap
 
 
 TAMANHO_FLORESTA = 50
-CHANCE_ARVORE_PEGAR_FOGO = 0.2
+CHANCE_ARVORE_PEGAR_FOGO = 0.3
 CHANCE_ARVORE_NASCER = 0.01
 
 #Este codigo só funciona para florestas quadradas.
