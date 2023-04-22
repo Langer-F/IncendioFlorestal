@@ -7,9 +7,9 @@ from matplotlib.colors import ListedColormap
 
 
 TAMANHO_FLORESTA = 200  #A floresta será uma matriz quadrada de lado TAMANHO_FLORESTA
-CHUVA = True            #CHUVA influencia fatores como espalahamento do fogo, além de adicionar uma chance aleatória de o fogo apagar espontaneamente
+CHUVA = False           #CHUVA influencia fatores como espalahamento do fogo, além de adicionar uma chance aleatória de o fogo apagar espontaneamente
 
-CHANCE_ARVORE_PEGAR_FOGO = 0.1 #representa a chance de uma ARVORE virar FOGO. Cada vizinho FOGO aumenta a chance
+CHANCE_ARVORE_PEGAR_FOGO = 0.15 #representa a chance de uma ARVORE virar FOGO. Cada vizinho FOGO aumenta a chance
 CHANCE_ARVORE_NASCER = 0.01     #representa a chance de uma CINZA virar ARVORE. Cada vizinho ARVORE aumenta a chance
 
 DURACAO_PADRAO_FOGO = 4     #quantas geracoes dura FOGO antes de virar CINZA
@@ -112,12 +112,15 @@ def calculaProximaGeracaoQueimada(floresta):
     O fogo avança para o proximo estagio, e caso ja esteja no ultimo, ele vira cinzas"""
     copia = floresta.copy()
     n = len(floresta)
+    CF = CHANCE_ARVORE_PEGAR_FOGO
+    if CHUVA:
+        CF = CF / 2
     for i in range(n):
         for j in range(n):
             if isinstance(floresta[i][j],ARVORE):
                 x = contaVizinhosFOGO(floresta,i,j)
                 r = random.random()
-                if (1-CHANCE_ARVORE_PEGAR_FOGO)**x < r:
+                if (1-CF)**x < r:
                     copia[i][j] = FOGO()
             elif isinstance(floresta[i][j],FOGO):
                 copia[i][j].passa_proximo_estagio()
@@ -131,12 +134,15 @@ def calculaProximaGeracaoReflorestamento(floresta):
     uma cinza que tem vizinhos arvores pode virar uma arvore"""
     copia = floresta.copy()
     n = len(floresta)
+    CN = CHANCE_ARVORE_NASCER
+    if CHUVA:
+        CN = CN*2
     for i in range(n):
         for j in range(n):
             if isinstance(floresta[i][j],CINZAS):
                 x = contaVizinhosARVORE(floresta,i,j)
                 r = random.random()
-                if (1-CHANCE_ARVORE_NASCER)**x < r:
+                if (1-CN)**x < r:
                     copia[i][j] = ARVORE()
             elif isinstance(floresta[i][j],FOGO):
                 copia[i][j].passa_proximo_estagio()
@@ -168,60 +174,135 @@ def main():
     global INICIAR
     listener.start()
     
+    #criação da floresta
     floresta = cria_floresta(TAMANHO_FLORESTA)
     #floresta[9] = np.full(TAMANHO_FLORESTA,AGUA())                 # cria um rio na linha 9
     #floresta[TAMANHO_FLORESTA//2][TAMANHO_FLORESTA//2] = FOGO()    #Adiciona uma celula em fogo no meio da floresta
     floresta = colocaFogoAleatorio(floresta, 5)
-    fig,ax = plt.subplots(figsize = (25,25),layout = 'constrained') #tamanho do grafico
+    
+    #parte da interface grafica
+    dpi = 100
+    tamanho_grid_x100 = 20
+    fig,ax = plt.subplots(figsize = (tamanho_grid_x100,tamanho_grid_x100),dpi = dpi) #tamanho do grafico
     ax.set_title("Estado Inicial")
     im =ax.imshow(matriz_de_cores(floresta),cmap=CMAP,vmin = 0, vmax = N_ESTADOS-1)
-    plt.text(-100,1,"P para Pausar",fontsize = 18,ha='left', wrap = True)
-    plt.text(-100,6,"N para Proxima Etapa",fontsize = 18,ha='left', wrap = True)
-    plt.text(-100,11,"I para iniciar",fontsize = 18,ha='left', wrap = True)
+    
+    #textos da esquerda
+    distancia_texto_vertical = 6
+    t1 = ax.text(-1.5*dpi,0,"P para Pausar",fontsize = 16,ha='left', wrap = True)
+    t2 = ax.text(-1.5*dpi,distancia_texto_vertical,"N para Proxima Etapa",fontsize = 16,ha='left', wrap = True)
+    t3 = ax.text(-1.5*dpi,distancia_texto_vertical*2,"I para iniciar",fontsize = 16,ha='left', wrap = True)
+    t4 = ax.text(-1.5*dpi,distancia_texto_vertical*3,"C para alterar CHUVA",fontsize = 16,ha='left', wrap = True)
+    t5 = ax.text(-1.5*dpi,distancia_texto_vertical*4,"upArrow para aumentar CHANCE FOGO",fontsize = 16,ha='left', wrap = True)
+    t6 = ax.text(-1.5*dpi,distancia_texto_vertical*5,"dowmArrow para diminuir CHANCE FOGO",fontsize = 16,ha='left', wrap = True)
+    t7 = ax.text(-1.5*dpi,distancia_texto_vertical*6,"rightArrow para aumentar CHANCE NASCER",fontsize = 16,ha='left', wrap = True)
+    t8 = ax.text(-1.5*dpi,distancia_texto_vertical*7,"leftArrow para diminuir CHANCE FOGO",fontsize = 16,ha='left', wrap = True)
+    
+    
+    #textos da direita
+    texto_chuva = ax.text(dpi*2,0,f"Chuva {CHUVA}", fontsize = 16)
+    tfogo = ax.text(dpi*2,distancia_texto_vertical,f"CHANCE_ARVORE_PEGAR_FOGO = {CHANCE_ARVORE_PEGAR_FOGO}",fontsize = 16,ha='left', wrap = True)
+    tnasc = ax.text(dpi*2,distancia_texto_vertical*2,f"CHANCE_ARVORE_NASCER = {CHANCE_ARVORE_NASCER}",fontsize = 16,ha='left', wrap = True)
+    tEstFogo = ax.text(dpi*2,distancia_texto_vertical*3,f"Numero de estagio do fogo= {DURACAO_PADRAO_FOGO}",fontsize = 16,ha='left', wrap = True)
+
     plt.show(block = False)
     plt.pause(1)
     
+    #loop inicial esperando o input "i" para iniciar
     while True:
+        texto_chuva.set_text(f"Chuva = {CHUVA}")
+        tfogo.set_text(f"CHANCE_ARVORE_PEGAR_FOGO = {CHANCE_ARVORE_PEGAR_FOGO}")
+        tnasc.set_text(f"CHANCE_ARVORE_NASCER = {CHANCE_ARVORE_NASCER}")
+        plt.draw()
+        plt.pause(0.1)
         if INICIAR:
             break
-    i=0
+    
+    i=0     #contador das gerações
+
+    #loop do primeiro estágio, o estágio da queimada
     while True:
-        if not PAUSED:
-            i = i+1
-            floresta = calculaProximaGeracaoQueimada(floresta)
-            im.set_data(matriz_de_cores(floresta))
-            ax.set_title(f"Geração {i} Estagio Queimada")
+        while PAUSED:
+            texto_chuva.set_text(f"Chuva = {CHUVA}")
+            tfogo.set_text(f"CHANCE_ARVORE_PEGAR_FOGO = {CHANCE_ARVORE_PEGAR_FOGO}")
+            tnasc.set_text(f"CHANCE_ARVORE_NASCER = {CHANCE_ARVORE_NASCER}")
             plt.draw()
-            plt.pause(.01)
+            plt.pause(.1)
+
+        
+        texto_chuva.set_text(f"Chuva = {CHUVA}")
+        tfogo.set_text(f"CHANCE_ARVORE_PEGAR_FOGO = {CHANCE_ARVORE_PEGAR_FOGO}")
+        tnasc.set_text(f"CHANCE_ARVORE_NASCER = {CHANCE_ARVORE_NASCER}")
+        i = i+1
+        floresta = calculaProximaGeracaoQueimada(floresta)
+        im.set_data(matriz_de_cores(floresta))
+        ax.set_title(f"Geração {i} Estagio Queimada")
+        plt.draw()
+        plt.pause(.01)
         if NEXT_ESTAGIO:
             NEXT_ESTAGIO = False
             break
+    
+    
     i = 0
     while True:
-        if not PAUSED:
-            i = i+1
-            floresta = calculaProximaGeracaoReflorestamento(floresta)
-            im.set_data(matriz_de_cores(floresta))
-            ax.set_title(f"Geracao {i} Reflorestamento")
+        while PAUSED:
+            texto_chuva.set_text(f"Chuva = {CHUVA}")
+            tfogo.set_text(f"CHANCE_ARVORE_PEGAR_FOGO = {CHANCE_ARVORE_PEGAR_FOGO}")
+            tnasc.set_text(f"CHANCE_ARVORE_NASCER = {CHANCE_ARVORE_NASCER}")
             plt.draw()
-            plt.pause(.01)
+            plt.pause()
+        
+
+        i = i+1
+        texto_chuva.set_text(f"Chuva = {CHUVA}")
+        tfogo.set_text(f"CHANCE_ARVORE_PEGAR_FOGO = {CHANCE_ARVORE_PEGAR_FOGO}")
+        tnasc.set_text(f"CHANCE_ARVORE_NASCER = {CHANCE_ARVORE_NASCER}")
+        floresta = calculaProximaGeracaoReflorestamento(floresta)
+        im.set_data(matriz_de_cores(floresta))
+        ax.set_title(f"Geracao {i} Reflorestamento")
+        plt.draw()
+        plt.pause(.01)
         if NEXT_ESTAGIO:
             break
     
 #Adicionando Keylistener para facilitar o controle do programa
-def on_press(key):
+def on_press(key): 
     global PAUSED
     global NEXT_ESTAGIO
     global INICIAR
+    global CHUVA
+    global CHANCE_ARVORE_PEGAR_FOGO
+    global CHANCE_ARVORE_NASCER
     try:
-        if key.char=='p':
+        if key.char == 'p':
             PAUSED = not PAUSED
         elif key.char == 'n':
             NEXT_ESTAGIO = True
         elif key.char == 'i':
             INICIAR = True
+        elif key.char == 'c':
+            CHUVA = not CHUVA
     except:
-        pass
+        try:
+            if key == keyboard.Key.down:
+                if CHANCE_ARVORE_PEGAR_FOGO > 0.01:
+                    CHANCE_ARVORE_PEGAR_FOGO = CHANCE_ARVORE_PEGAR_FOGO - 0.01
+                    CHANCE_ARVORE_PEGAR_FOGO = round(CHANCE_ARVORE_PEGAR_FOGO,2)
+            elif key == keyboard.Key.up:
+                if CHANCE_ARVORE_PEGAR_FOGO < 0.99:
+                    CHANCE_ARVORE_PEGAR_FOGO = CHANCE_ARVORE_PEGAR_FOGO + 0.01
+                    CHANCE_ARVORE_PEGAR_FOGO = round(CHANCE_ARVORE_PEGAR_FOGO,2)
+            elif key == keyboard.Key.left:
+                if CHANCE_ARVORE_NASCER > 0.01:
+                    CHANCE_ARVORE_NASCER = CHANCE_ARVORE_NASCER - 0.01
+                    CHANCE_ARVORE_NASCER = round(CHANCE_ARVORE_NASCER,2)
+            elif key == keyboard.Key.right:
+                if CHANCE_ARVORE_NASCER < 0.99:
+                    CHANCE_ARVORE_NASCER = CHANCE_ARVORE_NASCER + 0.01
+                    CHANCE_ARVORE_NASCER = round(CHANCE_ARVORE_NASCER,2)
+        except:
+            pass
 
 def on_release(key):
     pass
