@@ -196,7 +196,7 @@ def main():
     t5 = ax.text(-1.5*dpi,distancia_texto_vertical*4,"upArrow para aumentar CHANCE FOGO",fontsize = 16,ha='left', wrap = True)
     t6 = ax.text(-1.5*dpi,distancia_texto_vertical*5,"dowmArrow para diminuir CHANCE FOGO",fontsize = 16,ha='left', wrap = True)
     t7 = ax.text(-1.5*dpi,distancia_texto_vertical*6,"rightArrow para aumentar CHANCE NASCER",fontsize = 16,ha='left', wrap = True)
-    t8 = ax.text(-1.5*dpi,distancia_texto_vertical*7,"leftArrow para diminuir CHANCE FOGO",fontsize = 16,ha='left', wrap = True)
+    t8 = ax.text(-1.5*dpi,distancia_texto_vertical*7,"leftArrow para diminuir CHANCE NASCER",fontsize = 16,ha='left', wrap = True)
     
     
     #textos da direita
