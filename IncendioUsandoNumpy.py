@@ -9,7 +9,7 @@ from matplotlib.colors import ListedColormap
 TAMANHO_FLORESTA = 200  #A floresta será uma matriz quadrada de lado TAMANHO_FLORESTA
 CHUVA = False           #CHUVA influencia fatores como espalahamento do fogo, além de adicionar uma chance aleatória de o fogo apagar espontaneamente
 
-CHANCE_ARVORE_PEGAR_FOGO = 0.15 #representa a chance de uma ARVORE virar FOGO. Cada vizinho FOGO aumenta a chance
+CHANCE_ARVORE_PEGAR_FOGO = 0.1 #representa a chance de uma ARVORE virar FOGO. Cada vizinho FOGO aumenta a chance
 CHANCE_ARVORE_NASCER = 0.01     #representa a chance de uma CINZA virar ARVORE. Cada vizinho ARVORE aumenta a chance
 
 DURACAO_PADRAO_FOGO = 4     #quantas geracoes dura FOGO antes de virar CINZA
@@ -18,18 +18,80 @@ DURACAO_PADRAO_FOGO = 4     #quantas geracoes dura FOGO antes de virar CINZA
 class CINZAS():
     """Classe que representa as cinzas"""
     n = 0   #valor utilizado no color map
+    
+    def calcula_proxima_geracao(self,floresta,i,j):
+        #Condições iniciais
+        chance = CHANCE_ARVORE_NASCER
+        if CHUVA:
+            chance = chance*2
+        
+        #contando quantos vizinhos arvore existem
+        contador = 0
+        if isinstance(floresta[(i+1)][(j+1)],ARVORE):
+            contador += 1
+        if isinstance(floresta[(i+1)][(j)],ARVORE):
+            contador += 1
+        if isinstance(floresta[(i+1)][(j-1)],ARVORE):
+            contador += 1
+        if isinstance(floresta[(i)][(j+1)],ARVORE):
+            contador += 1
+        if isinstance(floresta[(i)][(j-1)],ARVORE):
+            contador += 1
+        if isinstance(floresta[(i-1)][(j+1)],ARVORE):
+            contador += 1
+        if isinstance(floresta[(i-1)][(j)],ARVORE):
+            contador += 1
+        if isinstance(floresta[(i-1)][(j-1)],ARVORE):
+            contador += 1
+        r = random.random()
+        if (1-chance)**contador<r:
+            return ARVORE()
+        return self
+
 
 class ARVORE():
     """Classe que representa as arvores"""
     n = 1
+    def calcula_proxima_geracao(self,floresta,i,j):
+        #Condições iniciais
+        chance = CHANCE_ARVORE_PEGAR_FOGO
+        if CHUVA:
+            chance = chance/2
+        
+        contador = 0
+        if isinstance(floresta[(i+1)][(j+1)],FOGO):
+            contador += 1
+        if isinstance(floresta[(i+1)][(j)],FOGO):
+            contador += 1
+        if isinstance(floresta[(i+1)][(j-1)],FOGO):
+            contador += 1
+        if isinstance(floresta[(i)][(j+1)],FOGO):
+            contador += 1
+        if isinstance(floresta[(i)][(j-1)],FOGO):
+            contador += 1
+        if isinstance(floresta[(i-1)][(j+1)],FOGO):
+            contador += 1
+        if isinstance(floresta[(i-1)][(j)],FOGO):
+            contador += 1
+        if isinstance(floresta[(i-1)][(j-1)],FOGO):
+            contador += 1
+        r = random.random()
+        if (1-chance)**contador<r:
+            return FOGO()
+        return self
+
 
 class AGUA():
     """Classe que representa a água"""
     n=2
+    def calcula_proxima_geracao(self,floresta = None,i=None,j=None):
+        return self
 
 class PEDRA():
     """Classe que representa Pedras, usada para definir as bordas da floresta"""
     n=3
+    def calcula_proxima_geracao(self,floresta = None,i = None,j = None):
+        return self
 
 class FOGO():
     """Classe que representa o fogo, tendo o contador como o numero de estagios que o fogo dura"""
@@ -37,61 +99,17 @@ class FOGO():
     def __init__(self,estagio=0,duracao = DURACAO_PADRAO_FOGO) -> None:
         self.estagio = estagio
         self.duracao = duracao
-    def passa_proximo_estagio(self):
-        self.estagio = self.estagio+1
-
-    def ultimo_estagio(self)->bool:
-        if (self.estagio == self.duracao):
-            return True
-        return False
+    def calcula_proxima_geracao(self,floresta = None,i = None,j = None):
+        self.estagio = self.estagio + 1
+        if self.estagio >= self.duracao:
+            return CINZAS()
+        return self
 
 
-N_ESTADOS = 6
+N_ESTADOS = 5
 
 colors = {CINZAS.n: 'gray',ARVORE.n: 'green',AGUA.n: 'blue',PEDRA.n: 'black', FOGO.n: 'yellow'}
 CMAP  = ListedColormap([colors[i] for i in sorted(colors.keys())])
-
-def contaVizinhosFOGO(floresta,i,j):
-    """Conta o numero de vizinhos que estao pegando fogo para uma determinada celula na posição Linha i Coluna j"""
-    contador = 0
-    if isinstance(floresta[(i+1)][(j+1)],FOGO):
-        contador += 1
-    if isinstance(floresta[(i+1)][(j)],FOGO):
-        contador += 1
-    if isinstance(floresta[(i+1)][(j-1)],FOGO):
-        contador += 1
-    if isinstance(floresta[(i)][(j+1)],FOGO):
-        contador += 1
-    if isinstance(floresta[(i)][(j-1)],FOGO):
-        contador += 1
-    if isinstance(floresta[(i-1)][(j+1)],FOGO):
-        contador += 1
-    if isinstance(floresta[(i-1)][(j)],FOGO):
-        contador += 1
-    if isinstance(floresta[(i-1)][(j-1)],FOGO):
-        contador += 1
-    return contador
-
-def contaVizinhosARVORE(floresta,i,j):
-    """Conta o numero de vizinhos que sao arvores para uma determinada celula na posição Linha i Coluna j"""
-    contador = 0
-    if isinstance(floresta[(i+1)][(j+1)],ARVORE):
-        contador += 1
-    if isinstance(floresta[(i+1)][(j)],ARVORE):
-        contador += 1
-    if isinstance(floresta[(i+1)][(j-1)],ARVORE):
-        contador += 1
-    if isinstance(floresta[(i)][(j+1)],ARVORE):
-        contador += 1
-    if isinstance(floresta[(i)][(j-1)],ARVORE):
-        contador += 1
-    if isinstance(floresta[(i-1)][(j+1)],ARVORE):
-        contador += 1
-    if isinstance(floresta[(i-1)][(j)],ARVORE):
-        contador += 1
-    if isinstance(floresta[(i-1)][(j-1)],ARVORE):
-        contador += 1
-    return contador
 
 def colocaFogoAleatorio(floresta,n):
     """Coloca n Celulas da floresta no estado FOGO)
@@ -112,21 +130,11 @@ def calculaProximaGeracaoQueimada(floresta):
     O fogo avança para o proximo estagio, e caso ja esteja no ultimo, ele vira cinzas"""
     copia = floresta.copy()
     n = len(floresta)
-    CF = CHANCE_ARVORE_PEGAR_FOGO
-    if CHUVA:
-        CF = CF / 2
     for i in range(n):
         for j in range(n):
-            if isinstance(floresta[i][j],ARVORE):
-                x = contaVizinhosFOGO(floresta,i,j)
-                r = random.random()
-                if (1-CF)**x < r:
-                    copia[i][j] = FOGO()
-            elif isinstance(floresta[i][j],FOGO):
-                copia[i][j].passa_proximo_estagio()
-                if (copia[i][j].ultimo_estagio()):
-                    copia[i][j] = CINZAS()
-            
+            if isinstance(floresta[i][j],CINZAS):
+                continue
+            copia[i][j] = floresta[i][j].calcula_proxima_geracao(floresta,i,j)
     return copia
 
 def calculaProximaGeracaoReflorestamento(floresta):
@@ -134,20 +142,9 @@ def calculaProximaGeracaoReflorestamento(floresta):
     uma cinza que tem vizinhos arvores pode virar uma arvore"""
     copia = floresta.copy()
     n = len(floresta)
-    CN = CHANCE_ARVORE_NASCER
-    if CHUVA:
-        CN = CN*2
     for i in range(n):
         for j in range(n):
-            if isinstance(floresta[i][j],CINZAS):
-                x = contaVizinhosARVORE(floresta,i,j)
-                r = random.random()
-                if (1-CN)**x < r:
-                    copia[i][j] = ARVORE()
-            elif isinstance(floresta[i][j],FOGO):
-                copia[i][j].passa_proximo_estagio()
-                if (copia[i][j].ultimo_estagio()):
-                    copia[i][j] = CINZAS()
+            copia[i][j] = floresta[i][j].calcula_proxima_geracao(floresta,i,j)
     return copia
 
 def matriz_de_cores(floresta):
@@ -176,16 +173,15 @@ def main():
     
     #criação da floresta
     floresta = cria_floresta(TAMANHO_FLORESTA)
-    #floresta[9] = np.full(TAMANHO_FLORESTA,AGUA())                 # cria um rio na linha 9
     #floresta[TAMANHO_FLORESTA//2][TAMANHO_FLORESTA//2] = FOGO()    #Adiciona uma celula em fogo no meio da floresta
-    floresta = colocaFogoAleatorio(floresta, 5)
+    floresta = colocaFogoAleatorio(floresta, 1)
     
     #parte da interface grafica
     dpi = 100
     tamanho_grid_x100 = 20
     fig,ax = plt.subplots(figsize = (tamanho_grid_x100,tamanho_grid_x100),dpi = dpi) #tamanho do grafico
     ax.set_title("Estado Inicial")
-    im =ax.imshow(matriz_de_cores(floresta),cmap=CMAP,vmin = 0, vmax = N_ESTADOS-1)
+    im =ax.imshow(matriz_de_cores(floresta),cmap=CMAP,vmin = 0, vmax = N_ESTADOS)
     
     #textos da esquerda
     distancia_texto_vertical = 6
@@ -243,7 +239,12 @@ def main():
             NEXT_ESTAGIO = False
             break
     
-    
+    #Estágio de reflorestamento
+        #Apagando o fogo
+    for i in range(TAMANHO_FLORESTA):
+        for j in range(TAMANHO_FLORESTA):
+            if isinstance(floresta[i][j],FOGO):
+                floresta[i][j] = CINZAS()
     i = 0
     while True:
         while PAUSED:
@@ -251,7 +252,7 @@ def main():
             tfogo.set_text(f"CHANCE_ARVORE_PEGAR_FOGO = {CHANCE_ARVORE_PEGAR_FOGO}")
             tnasc.set_text(f"CHANCE_ARVORE_NASCER = {CHANCE_ARVORE_NASCER}")
             plt.draw()
-            plt.pause()
+            plt.pause(.1)
         
 
         i = i+1
